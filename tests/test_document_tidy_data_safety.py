@@ -244,7 +244,6 @@ def test_ai_tidy_archives_without_erasing_versions(tidy_database, monkeypatch):
     import json
     import re
     import routes.document.document_routes as routes
-    import src.llm_core as llm_core
     import src.task_endpoint as task_endpoint
     from core.database import Document, DocumentVersion
 
@@ -254,11 +253,11 @@ def test_ai_tidy_archives_without_erasing_versions(tidy_database, monkeypatch):
     monkeypatch.setattr(task_endpoint, "resolve_task_endpoint",
                         lambda **kwargs: ("http://127.0.0.1:1/v1", "synthetic", {}))
 
-    async def classify(url, model, messages, **kwargs):
+    async def classify(messages, **kwargs):
         lines = [line for line in messages[1]["content"].splitlines() if re.match(r"^\[\d+\]", line)]
         return json.dumps(["keep" if 'title="Keep"' in line else "junk" for line in lines])
 
-    monkeypatch.setattr(llm_core, "llm_call_async", classify)
+    monkeypatch.setattr(task_endpoint, "task_llm_call_async", classify)
     app = FastAPI()
 
     @app.middleware("http")
